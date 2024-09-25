@@ -2,18 +2,30 @@
  * A slide deck object
  */
 class SlideDeck {
-  /**
-   * Constructor for the SlideDeck object.
-   * @param {NodeList} slides A list of HTML elements containing the slide text.
-   * @param {L.map} map The Leaflet map where data will be shown.
-   */
   constructor(slides, map) {
     this.slides = slides;
     this.map = map;
-
     this.dataLayer = L.layerGroup().addTo(map);
+    this.loadPhiladelphiaLayer();  
     this.currentSlideIndex = 0;
   }
+
+  loadPhiladelphiaLayer() {
+    fetch('data/Philadelphia.json')
+      .then(response => response.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: {
+            color: 'black',
+            dashArray: '5, 5',  
+            weight: 2
+          }
+        }).addTo(this.map);
+      })
+      .catch(error => console.error('Error loading the Philadelphia layer:', error));
+  }
+
+  // ... other methods like updateDataLayer, syncMapToCurrentSlide, etc.
 
   /**
    * ### updateDataLayer
@@ -31,13 +43,20 @@ class SlideDeck {
     this.dataLayer.clearLayers();
     const geoJsonLayer = L.geoJSON(data, {
       pointToLayer: (p, latlng) => L.marker(latlng),
-      style: (feature) => feature.properties.style,
+      style: (feature) => ({
+        color: '#a6c038', 
+        fillColor: '#a6c038', 
+        weight: feature.properties.weight || 1,
+        opacity: feature.properties.opacity || 1,
+        fillOpacity: feature.properties.fillOpacity || 0.5
+      }),
     })
-        .bindTooltip((l) => l.feature.properties.label)
-        .addTo(this.dataLayer);
+    .bindTooltip((l) => l.feature.properties.label)
+    .addTo(this.dataLayer);
 
     return geoJsonLayer;
   }
+
 
   /**
    * ### getSlideFeatureCollection
